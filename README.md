@@ -70,9 +70,10 @@ You should describe your solution in a detailed report - focus on explaining you
 ```
 
 For the sliding puzzle, the input file must have the following format:
-
+```
 1,2,_,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
 4,9,8,12,14,_,18,13,11,19,21,23,20,24,15,1,3,7,16,5,6,2,10,17,22
+```
 The first line is the start configuration and the second line is the target configuration.
 
 The output file should look like this:
