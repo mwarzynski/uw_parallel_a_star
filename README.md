@@ -1,9 +1,10 @@
 # Massively Parallel A* Search on a GPU
 
-1. Introduction
+## 1. Introduction
 
-A* (or AStar) is a graph search algorithm widely used in artificial intelligence. While the traditional version of this algorithm is purely sequential, there have been several parallel versions over the years. One such variant is the approach described by Zhou and Zeng in their paper Massively Parallel A* Search on a GPU. It's a version of A* designed for GPU execution. Your task in this assignment is to implement that algorightm with CUDA.
-2. Details
+A* (or AStar) is a graph search algorithm widely used in artificial intelligence. While the traditional version of this algorithm is purely sequential, there have been several parallel versions over the years. One such variant is the approach described by Zhou and Zeng in their paper Massively Parallel A* Search on a GPU. It's a version of A* designed for GPU execution.
+
+## 2. Details
 
 The algorithm is described in this paper: Massively Parallel A* Search on a GPU.
 
