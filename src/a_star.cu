@@ -1,6 +1,4 @@
-
-struct Node {
-} typedef Node;
+#include "a_star.h"
 
 void ga(Node* s, Node* t, int k) {
     queue[k] Q;
