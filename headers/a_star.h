@@ -1,15 +1,14 @@
 #include <stdio.h>
 
-struct List {};
+#include "map.h"
+#include "queue.h"
 
-struct Queue {};
+#define TYPE_PUZZLE 1
+#define TYPE_PATHFINDING 2
 
-struct HashMap {};
-
-struct Node {
-    g int
-    f int
-};
-
-Node* gpu_a_star(Node* source, Node* destination, int k);
+typedef struct {
+    double g;
+    double f;
+    void *data;
+} Node;
 
