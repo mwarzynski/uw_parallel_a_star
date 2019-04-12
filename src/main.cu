@@ -102,28 +102,6 @@ __global__ void gpu_astar() {
     Map *map = map_init(MAP_HASHING_FUNCTIONS, k);
 
     // TODO: implement the actual algorithm
-    Node* nodes = (Node*)malloc(sizeof(Node)*5);
-    nodes[0].f = 4;
-    nodes[1].f = 1;
-    nodes[2].f = 2;
-    nodes[3].f = 5;
-    nodes[4].f = 3;
-    queue_push(&queues[0], &nodes[0]);
-    queue_push(&queues[0], &nodes[1]);
-    queue_push(&queues[0], &nodes[2]);
-    queue_push(&queues[0], &nodes[3]);
-    queue_push(&queues[0], &nodes[4]);
-
-    queue_pop(&queues[0], &nodes[5]);
-    printf("%d\n", nodes[5].f);
-    queue_pop(&queues[0], &nodes[5]);
-    printf("%d\n", nodes[5].f);
-    queue_pop(&queues[0], &nodes[5]);
-    printf("%d\n", nodes[5].f);
-    queue_pop(&queues[0], &nodes[5]);
-    printf("%d\n", nodes[5].f);
-    queue_pop(&queues[0], &nodes[5]);
-    printf("%d\n", nodes[5].f);
 
     queues_free(queues, k);
     map_free(map);
