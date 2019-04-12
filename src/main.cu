@@ -2,6 +2,7 @@
 
 __device__ void queue_init(Queue* queue, int capacity) {
     queue->items = (Node*)malloc(sizeof(Node)*capacity);
+    assert(queue->items != NULL);
     queue->capacity = capacity;
     queue->count = 0;
 }
@@ -9,6 +10,7 @@ __device__ void queue_init(Queue* queue, int capacity) {
 __device__ Queue* queues_init(int k, int capacity) {
     Queue* queues;
     queues = (Queue*)malloc(sizeof(Queue)*k);
+    assert(queues != NULL);
     for (int i = 0; i < k; i++) {
         queue_init(&queues[i], capacity);
     }
@@ -77,8 +79,10 @@ __device__ int map_hash(Map* map, int j, Node *node) {
 
 __device__ Map* map_init(int hashing_functions_count, int size) {
     Map* map = (Map*)malloc(sizeof(Map));
+    assert(map != NULL);
     map->hashing_functions_count = hashing_functions_count;
     map->nodes = (Node*)malloc(sizeof(Node)*size);
+    assert(map->nodes != NULL);
     map->size = size;
     return map;
 }
