@@ -3,7 +3,7 @@
 __device__ void queue_init(Queue* queue, int capacity) {
     queue->items = (Node*)malloc(sizeof(Node)*capacity);
     queue->capacity = capacity;
-    queue->items_count = 0;
+    queue->count = 0;
 }
 
 __device__ Queue* queues_init(int k, int capacity) {
@@ -16,11 +16,48 @@ __device__ Queue* queues_init(int k, int capacity) {
 }
 
 __device__ void queue_push(Queue *queue, Node* node) {
-    return;
+    // TODO(mwarzynski): consider memory reallocation.
+    assert(queue->count < queue->capacity);
+    queue->count++;
+    int i = queue->count-1;
+    int p;
+    while (i > 0) {
+        p = (i-1)/2;
+        if (queue->items[p].f < node->f) {
+            break;
+        }
+        queue->items[i] = queue->items[p];
+        i = p;
+    }
+    queue->items[i] = *node;
 }
 
-__device__ Node* queue_pop(Queue *queue) {
-    return NULL;
+__device__ void queue_downify(Queue *queue, int i) {
+    int l = 2*i+1;
+    int r = l+1;
+    // Determine if we need to push value down.
+    int min = i;
+    if (l < queue->count && queue->items[l].f < queue->items[min].f) {
+        min = l;
+    }
+    if (r < queue->count && queue->items[r].f < queue->items[min].f) {
+        min = r;
+    }
+    // If one of our children has a better value, bring it up.
+    // We also need to make sure our subtree will have correct values.
+    if (min != i) {
+        Node t = queue->items[i];
+        queue->items[i] = queue->items[min];
+        queue->items[min] = t;
+        queue_downify(queue, min);
+    }
+}
+
+__device__ void queue_pop(Queue *queue, Node *result) {
+    assert(queue->count > 0);
+    *result = queue->items[0];
+    queue->items[0] = queue->items[--queue->count];
+    queue_downify(queue, 0);
 }
 
 __device__ void queue_free(Queue* queue) {
@@ -34,28 +71,63 @@ __device__ void queues_free(Queue* queues, int k) {
     free(queues);
 }
 
-__device__ int map_hash(Map* H, int j, Node *node) {
+__device__ int map_hash(Map* map, int j, Node *node) {
     return 7;
 }
 
-__device__ Map* map_init(int d, int size) {
-    return NULL;
+__device__ Map* map_init(int hashing_functions_count, int size) {
+    Map* map = (Map*)malloc(sizeof(Map));
+    map->hashing_functions_count = hashing_functions_count;
+    map->nodes = (Node*)malloc(sizeof(Node)*size);
+    map->size = size;
+    return map;
 }
 
 __device__ void map_deduplicate(Map* H, Node* nodes, Node* nodes_dest, int n) {}
+
+__device__ void map_free(Map* map) {
+    free(map->nodes);
+    free(map);
+}
 
 __global__ void gpu_astar() {
     int k = QUEUE_K;
     int capacity = QUEUE_CAPACITY;
 
-    Queue *queues = NULL;
-    queues = queues_init(k, capacity);
+    Queue *queues = queues_init(k, capacity);
+    Map *map = map_init(MAP_HASHING_FUNCTIONS, k);
+
+    // TODO: implement the actual algorithm
+    Node* nodes = (Node*)malloc(sizeof(Node)*5);
+    nodes[0].f = 4;
+    nodes[1].f = 1;
+    nodes[2].f = 2;
+    nodes[3].f = 5;
+    nodes[4].f = 3;
+    queue_push(&queues[0], &nodes[0]);
+    queue_push(&queues[0], &nodes[1]);
+    queue_push(&queues[0], &nodes[2]);
+    queue_push(&queues[0], &nodes[3]);
+    queue_push(&queues[0], &nodes[4]);
+
+    queue_pop(&queues[0], &nodes[5]);
+    printf("%d\n", nodes[5].f);
+    queue_pop(&queues[0], &nodes[5]);
+    printf("%d\n", nodes[5].f);
+    queue_pop(&queues[0], &nodes[5]);
+    printf("%d\n", nodes[5].f);
+    queue_pop(&queues[0], &nodes[5]);
+    printf("%d\n", nodes[5].f);
+    queue_pop(&queues[0], &nodes[5]);
+    printf("%d\n", nodes[5].f);
 
     queues_free(queues, k);
+    map_free(map);
 }
 
 int main() {
     gpu_astar<<<1, 1>>>();
+    cudaDeviceSynchronize();
     return 0;
 }
 
