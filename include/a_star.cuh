@@ -6,17 +6,14 @@
 
 #define MAP_HASHING_FUNCTIONS 10
 
-#define TYPE_PUZZLE 1
-#define TYPE_PATHFINDING 2
+#define PROBLEM_TYPE_PUZZLE 1
+#define PROBLEM_TYPE_PATHFINDING 2
 
-static void HandleError(cudaError_t error, const char *file, int line) {
-    if (error != cudaSuccess) {
-        printf("%s in %s at line %d\n", cudaGetErrorString(error), file, line);
-        exit(EXIT_FAILURE);
-    }
-}
+__device__ int problem_type;
 
-#define HANDLE_ERROR(err) (HandleError(err, __FILE__, __LINE__ ))
+typedef struct {
+    int id;
+} NodePuzzle;
 
 typedef struct {
     int g;
@@ -24,9 +21,11 @@ typedef struct {
     void *data;
 } Node;
 
+__device__ int node_id(Node *node);
+
 typedef struct {
-    Node* nodes;
-    int hashing_functions_count;
+    Node** nodes;
+    int hs;
     int size;
 } Map;
 

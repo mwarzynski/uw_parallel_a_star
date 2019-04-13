@@ -1,5 +1,27 @@
 #include "a_star.cuh"
 
+__device__ int node_id_puzzle(Node* node) {
+    NodePuzzle* p = (NodePuzzle*)node->data;
+    return p->id;
+}
+
+__device__ int node_id_pathfinding(Node* node) {
+    // TODO(mwarzynski): implement generating ID for pathfinding Node.
+    return 0;
+}
+
+__device__ int node_id(Node* node) {
+    switch (problem_type) {
+        case PROBLEM_TYPE_PUZZLE:
+            return node_id_puzzle(node);
+        case PROBLEM_TYPE_PATHFINDING:
+            return node_id_pathfinding(node);
+        default:
+            assert(false);
+            return -1;
+    }
+}
+
 __device__ void queue_init(Queue* queue, int capacity) {
     queue->items = (Node*)malloc(sizeof(Node)*capacity);
     assert(queue->items != NULL);
@@ -74,41 +96,60 @@ __device__ void queues_free(Queue* queues, int k) {
 }
 
 __device__ int map_hash(Map* map, int j, Node *node) {
+    // TODO(mwarzynski): implement proper hashing function.
     return 7;
 }
 
 __device__ Map* map_init(int hashing_functions_count, int size) {
     Map* map = (Map*)malloc(sizeof(Map));
     assert(map != NULL);
-    map->hashing_functions_count = hashing_functions_count;
-    map->nodes = (Node*)malloc(sizeof(Node)*size);
+    map->hs = hashing_functions_count;
+    map->nodes = (Node**)malloc(sizeof(Node*)*size);
     assert(map->nodes != NULL);
     map->size = size;
     return map;
 }
 
-__device__ void map_deduplicate(Map* H, Node* nodes, Node* nodes_dest, int n) {}
+__device__ void map_deduplicate(Map* H, Node* nodes, Node* nodes_dest, int n) {
+    Node* node = &nodes[0];
+    // Find index 'z' to place the item.
+    int z = 0;
+    int id = node_id(node);
+    for (int j = 0; j < H->hs; j++) {
+        int i = map_hash(H, j, node);
+        if (H->nodes[i] == NULL || id == node_id(H->nodes[i])) {
+            z = i;
+            break;
+        }
+    }
+    // Atomic swap value with the current node.
+    Node* t = (Node*)atomicExch((unsigned long long int*)H->nodes[z], (unsigned long long int)&nodes[0]);
+    if (node_id(t) == node_id(node)) {
+        nodes[0] = NULL;
+    }
+}
 
 __device__ void map_free(Map* map) {
     free(map->nodes);
     free(map);
 }
 
-__global__ void gpu_astar() {
+__global__ void gpu_astar(int problem) {
+    problem_type = problem;
     int k = QUEUE_K;
     int capacity = QUEUE_CAPACITY;
 
     Queue *queues = queues_init(k, capacity);
     Map *map = map_init(MAP_HASHING_FUNCTIONS, k);
 
-    // TODO: implement the actual algorithm
+    // TODO(mwarzynski): implement the actual algorithm.
 
     queues_free(queues, k);
     map_free(map);
 }
 
 int main() {
-    gpu_astar<<<1, 1>>>();
+    gpu_astar<<<1, 1>>>(PROBLEM_TYPE_PUZZLE);
     cudaDeviceSynchronize();
     return 0;
 }
