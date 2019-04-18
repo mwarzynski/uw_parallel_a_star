@@ -21,7 +21,7 @@ __device__ int node_id_pathfinding(Node* node) {
 }
 
 __device__ int node_id(Node* node) {
-    switch (problem_type) {
+    switch (p.type) {
         case PROBLEM_TYPE_PUZZLE:
             return node_id_puzzle(node);
         case PROBLEM_TYPE_PATHFINDING:
@@ -117,7 +117,7 @@ int main() {
     p.mem_size = 1024*1024*1024 * 9L;
     p.queues_size = 1024*1024 * 512L;
     p.map_size = 1024*1024 * 512L;
-    p.problem = PROBLEM_TYPE_PUZZLE;
+    p.type = PROBLEM_TYPE_PUZZLE;
     p.k = QUEUE_K;
 
     // Initialize memory.
@@ -128,7 +128,7 @@ int main() {
     cudaDeviceSynchronize();
 
     // Run algorithm.
-    gpu_astar<<<1, 1>>>(p.k);
+    gpu_astar<<<1, 1024>>>(p.k);
     cudaDeviceSynchronize();
 
     // TODO: Fetch results from GPU.
@@ -137,7 +137,6 @@ int main() {
     handleError(cudaFree(p.memory));
     handleError(cudaFree(p.queues));
     handleError(cudaFree(p.map));
-    cudaDeviceSynchronize();
 
     return 0;
 }

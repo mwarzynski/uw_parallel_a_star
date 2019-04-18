@@ -19,8 +19,6 @@ typedef unsigned long long int size_c;
 #define PROBLEM_TYPE_PUZZLE 1
 #define PROBLEM_TYPE_PATHFINDING 2
 
-__device__ int problem_type;
-
 
 typedef struct {
     void *data;
@@ -82,7 +80,7 @@ typedef struct {
     size_c map_size;
 
     int k;
-    int problem;
+    int type;
 } Problem;
 
 __device__ Problem p;
