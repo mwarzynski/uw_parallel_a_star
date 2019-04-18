@@ -1,16 +1,13 @@
 #include <stdio.h>
 #include <assert.h>
 
-static void HandleError( cudaError_t err,
-                         const char *file,
-                         int line ) {
+static void HandleError(cudaError_t err, const char *file, int line) {
     if (err != cudaSuccess) {
-        printf( "%s in %s at line %d\n", cudaGetErrorString( err ),
-                file, line );
-        exit( EXIT_FAILURE );
+        printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+        exit(EXIT_FAILURE);
     }
 }
-#define handleError( err ) (HandleError( err, __FILE__, __LINE__ ))
+#define handleError(err) (HandleError(err, __FILE__, __LINE__))
 
 typedef unsigned long long int size_c;
 
