@@ -1,15 +1,15 @@
 #include "a_star.cuh"
 
-__device__ void memory_init(size_t mem_size) {
+__device__ void memory_init(Memory* memory, size_c mem_size) {
     memory->data = (void*)((size_c)memory + sizeof(Memory));
     memory->size = mem_size - sizeof(Memory);
     memory->allocated = 0;
 }
 
 __device__ void* memory_allocate(size_t size) {
-    size_c allocated = atomicAdd(&memory->allocated, size);
-    assert(allocated + size < memory->size);
-    return (void*)((size_c)memory->data + allocated);
+    size_c allocated = atomicAdd(&p.memory->allocated, size);
+    assert(allocated + size < p.memory->size);
+    return (void*)((size_c)p.memory->data + allocated);
 }
 
 __device__ int node_id_puzzle(Node* node) {
@@ -32,7 +32,7 @@ __device__ int node_id(Node* node) {
     }
 }
 
-__device__ void queues_init(int k, size_c all_memory) {
+__device__ void queues_init(Queue *queues, size_c all_memory, int k) {
     size_c queues_memory = sizeof(Queue)*k;
     size_c items_memory = (all_memory - queues_memory) / k;
     for (int i = 0; i < k; i++) {
@@ -91,7 +91,7 @@ __device__ int map_hash(Map* map, int j, Node *node) {
     return 0;
 }
 
-__device__ void map_init(size_c map_size) {
+__device__ void map_init(Map *map, size_c map_size) {
     map->hs = MAP_HASHING_FUNCTIONS;
     map->nodes = (Node**)((size_c)map + sizeof(Map));
     map->nodes_count = (map_size - sizeof(Map)) / sizeof(Node**);
@@ -101,14 +101,11 @@ __device__ void map_deduplicate(Node* nodes, Node* nodes_dest, int n) {
 
 }
 
-__global__ void gpu_astar_init(Problem p) {
-    memory = p.dev_mem;
-    queues = p.dev_queues;
-    map = p.dev_map;
-    problem_type = p.problem;
-    memory_init(p.mem_size);
-    queues_init(p.k, p.queues_size);
-    map_init(p.map_size);
+__global__ void gpu_astar_init(Problem problem) {
+    p = problem;
+    memory_init(p.memory, p.mem_size);
+    queues_init(p.queues, p.queues_size, p.k);
+    map_init(p.map, p.map_size);
 }
 
 __global__ void gpu_astar(int k) {
@@ -124,9 +121,9 @@ int main() {
     p.k = QUEUE_K;
 
     // Initialize memory.
-    handleError(cudaMalloc((void**)&p.dev_mem, p.mem_size));
-    handleError(cudaMalloc((void**)&p.dev_queues, p.queues_size));
-    handleError(cudaMalloc((void**)&p.dev_map, p.map_size));
+    handleError(cudaMalloc((void**)&p.memory, p.mem_size));
+    handleError(cudaMalloc((void**)&p.queues, p.queues_size));
+    handleError(cudaMalloc((void**)&p.map, p.map_size));
     gpu_astar_init<<<1, 1>>>(p);
     cudaDeviceSynchronize();
 
@@ -134,12 +131,12 @@ int main() {
     gpu_astar<<<1, 1>>>(p.k);
     cudaDeviceSynchronize();
 
-    // Fetch results from GPU.
+    // TODO: Fetch results from GPU.
 
     // Free memory.
-    handleError(cudaFree(p.dev_mem));
-    handleError(cudaFree(p.dev_queues));
-    handleError(cudaFree(p.dev_map));
+    handleError(cudaFree(p.memory));
+    handleError(cudaFree(p.queues));
+    handleError(cudaFree(p.map));
     cudaDeviceSynchronize();
 
     return 0;

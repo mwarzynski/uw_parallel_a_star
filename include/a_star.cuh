@@ -28,10 +28,8 @@ typedef struct {
     size_c size;
 } Memory;
 
-__device__ void memory_init(size_t size);
-__device__ void* memory_allocate(size_t size);
-
-__device__ Memory *memory;
+__device__ void memory_init(Memory *mem, size_c size);
+__device__ void* memory_allocate(size_c size);
 
 
 typedef struct {
@@ -58,10 +56,8 @@ typedef struct {
 
 __device__ int map_hash(Map* H, int j, Node *node);
 
-__device__ void map_init(size_c map_size);
+__device__ void map_init(Map* map, size_c map_size);
 __device__ void map_deduplicate(Node* nodes, Node* nodes_dest, int n);
-
-__device__ Map *map;
 
 
 typedef struct {
@@ -70,23 +66,23 @@ typedef struct {
     Node* items;
 } Queue;
 
-__device__ void queues_init(int k, size_c memory);
+__device__ void queues_init(Queue* queue, size_c memory, int k);
 __device__ void queue_push(Queue* queue, Node* node);
 __device__ void queue_pop(Queue* queue, Node *node);
 
-__device__ Queue *queues;
-
 
 typedef struct {
-    Memory* dev_mem;
+    Memory* memory;
     size_c mem_size;
 
-    Queue* dev_queues;
+    Queue* queues;
     size_c queues_size;
 
-    Map* dev_map;
+    Map* map;
     size_c map_size;
 
     int k;
     int problem;
 } Problem;
+
+__device__ Problem p;
