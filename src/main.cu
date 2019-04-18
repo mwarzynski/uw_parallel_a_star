@@ -1,12 +1,22 @@
 #include "a_star.cuh"
 
+__device__ void memory_init(size_t mem_size) {
+    memory->data = (void*)((size_c)memory + sizeof(Memory));
+    memory->size = mem_size - sizeof(Memory);
+    memory->allocated = 0;
+}
+
+__device__ void* memory_allocate(size_t size) {
+    size_c allocated = atomicAdd(&memory->allocated, size);
+    assert(allocated + size < memory->size);
+    return (void*)((size_c)memory->data + allocated);
+}
+
 __device__ int node_id_puzzle(Node* node) {
-    NodePuzzle* p = (NodePuzzle*)node->data;
-    return p->id;
+    return 0;
 }
 
 __device__ int node_id_pathfinding(Node* node) {
-    // TODO(mwarzynski): implement generating ID for pathfinding Node.
     return 0;
 }
 
@@ -22,25 +32,17 @@ __device__ int node_id(Node* node) {
     }
 }
 
-__device__ void queue_init(Queue* queue, int capacity) {
-    queue->items = (Node*)malloc(sizeof(Node)*capacity);
-    assert(queue->items != NULL);
-    queue->capacity = capacity;
-    queue->count = 0;
-}
-
-__device__ Queue* queues_init(int k, int capacity) {
-    Queue* queues;
-    queues = (Queue*)malloc(sizeof(Queue)*k);
-    assert(queues != NULL);
+__device__ void queues_init(int k, size_c all_memory) {
+    size_c queues_memory = sizeof(Queue)*k;
+    size_c items_memory = (all_memory - queues_memory) / k;
     for (int i = 0; i < k; i++) {
-        queue_init(&queues[i], capacity);
+        queues[i].count = 0;
+        queues[i].capacity = items_memory / sizeof(Node*);
+        queues[i].items = (Node*)((size_c)queues + queues_memory + (i*items_memory));
     }
-    return queues;
 }
 
 __device__ void queue_push(Queue *queue, Node* node) {
-    // TODO(mwarzynski): consider memory reallocation.
     assert(queue->count < queue->capacity);
     queue->count++;
     int i = queue->count-1;
@@ -84,73 +86,70 @@ __device__ void queue_pop(Queue *queue, Node *result) {
     queue_downify(queue, 0);
 }
 
-__device__ void queue_free(Queue* queue) {
-    free(queue->items);
-}
-
-__device__ void queues_free(Queue* queues, int k) {
-    for (int i = 0; i < k; i++) {
-        queue_free(&queues[i]);
-    }
-    free(queues);
-}
-
 __device__ int map_hash(Map* map, int j, Node *node) {
-    // TODO(mwarzynski): implement proper hashing function.
-    return 7;
+    return 0;
 }
 
-__device__ Map* map_init(int hashing_functions_count, int size) {
-    Map* map = (Map*)malloc(sizeof(Map));
-    assert(map != NULL);
-    map->hs = hashing_functions_count;
-    map->nodes = (Node**)malloc(sizeof(Node*)*size);
-    assert(map->nodes != NULL);
-    map->size = size;
-    return map;
+__device__ void map_init(int k, int hashing_functions_count) {
+
 }
 
-__device__ void map_deduplicate(Map* H, Node* nodes, Node* nodes_dest, int n) {
-    Node* node = &nodes[0];
-    // Find index 'z' to place the item.
-    int z = 0;
-    int id = node_id(node);
-    for (int j = 0; j < H->hs; j++) {
-        int i = map_hash(H, j, node);
-        if (H->nodes[i] == NULL || id == node_id(H->nodes[i])) {
-            z = i;
-            break;
-        }
-    }
-    // Atomic swap value with the current node.
-    Node* t = (Node*)atomicExch((unsigned long long int*)H->nodes[z], (unsigned long long int)&nodes[0]);
-    if (node_id(t) == node_id(node)) {
-        nodes[0] = NULL;
-    }
+__device__ void map_deduplicate(Node* nodes, Node* nodes_dest, int n) {
+
 }
 
-__device__ void map_free(Map* map) {
-    free(map->nodes);
-    free(map);
-}
-
-__global__ void gpu_astar(int problem) {
+__global__ void gpu_astar_init(
+        Memory *dmem,
+        Queue *dqueue,
+        Map *dmap,
+        int k,
+        int problem,
+        size_c mem_size,
+        size_c queues_size,
+        size_c map_size) {
+    memory = dmem;
+    queues = dqueue;
+    map = dmap;
     problem_type = problem;
-    int k = QUEUE_K;
-    int capacity = QUEUE_CAPACITY;
+    memory_init(mem_size);
+    queues_init(k, queues_size);
+    map_init(k, map_size);
+}
 
-    Queue *queues = queues_init(k, capacity);
-    Map *map = map_init(MAP_HASHING_FUNCTIONS, k);
-
-    // TODO(mwarzynski): implement the actual algorithm.
-
-    queues_free(queues, k);
-    map_free(map);
+__global__ void gpu_astar(int k) {
+    // TODO: implement the actual algorithm.
 }
 
 int main() {
-    gpu_astar<<<1, 1>>>(PROBLEM_TYPE_PUZZLE);
+    int k = QUEUE_K;
+    int problem = PROBLEM_TYPE_PUZZLE;
+
+    Memory *dev_mem;
+    Queue *dev_queues;
+    Map *dev_map;
+
+    // Initialize memory.
+    size_c mem_size = 1024*1024*1024 * 9L;
+    handleError(cudaMalloc((void**)&dev_mem, mem_size));
+    size_c queues_size = 1024*1024 * 512L;
+    handleError(cudaMalloc((void**)&dev_queues, queues_size));
+    size_c map_size = 1024*1024 * 512L;
+    handleError(cudaMalloc((void**)&dev_map, map_size));
+    gpu_astar_init<<<1, 1>>>(dev_mem, dev_queues, dev_map, k, problem, mem_size, queues_size, map_size);
     cudaDeviceSynchronize();
+
+    // Run algorithm.
+    gpu_astar<<<100, 100>>>(k);
+    cudaDeviceSynchronize();
+
+    // Fetch results from GPU.
+
+    // Free memory.
+    handleError(cudaFree(dev_mem));
+    handleError(cudaFree(dev_queues));
+    handleError(cudaFree(dev_map));
+    cudaDeviceSynchronize();
+
     return 0;
 }
 

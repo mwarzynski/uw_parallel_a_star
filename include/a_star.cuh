@@ -1,6 +1,19 @@
 #include <stdio.h>
 #include <assert.h>
 
+static void HandleError( cudaError_t err,
+                         const char *file,
+                         int line ) {
+    if (err != cudaSuccess) {
+        printf( "%s in %s at line %d\n", cudaGetErrorString( err ),
+                file, line );
+        exit( EXIT_FAILURE );
+    }
+}
+#define handleError( err ) (HandleError( err, __FILE__, __LINE__ ))
+
+typedef unsigned long long int size_c;
+
 #define QUEUE_K 2
 #define QUEUE_CAPACITY 10
 
@@ -11,9 +24,24 @@
 
 __device__ int problem_type;
 
+
 typedef struct {
-    int id;
+    void *data;
+    size_c allocated;
+    size_c size;
+} Memory;
+
+__device__ void memory_init(size_t size);
+__device__ void* memory_allocate(size_t size);
+
+__device__ Memory *memory;
+
+
+typedef struct {
 } NodePuzzle;
+
+typedef struct {
+} NodePathfinding;
 
 typedef struct {
     int g;
@@ -23,6 +51,7 @@ typedef struct {
 
 __device__ int node_id(Node *node);
 
+
 typedef struct {
     Node** nodes;
     int hs;
@@ -31,18 +60,21 @@ typedef struct {
 
 __device__ int map_hash(Map* H, int j, Node *node);
 
-__device__ Map* map_init(int hashing_functions_count, int size);
+__device__ void map_init(int k, int hashing_functions_count);
 __device__ void map_deduplicate(Map* H, Node* nodes, Node* nodes_dest, int n);
-__device__ void map_free(Map* map);
 
-typedef struct Queue {
+__device__ Map *map;
+
+
+typedef struct {
     int capacity;
     int count;
     Node* items;
 } Queue;
 
-__device__ Queue* queues_init(int k, int capacity);
+__device__ void queues_init(int k, size_c memory);
 __device__ void queue_push(Queue* queue, Node* node);
 __device__ void queue_pop(Queue* queue, Node *node);
-__device__ void queues_free(Queue* queue, int k);
+
+__device__ Queue *queues;
 
