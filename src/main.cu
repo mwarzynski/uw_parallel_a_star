@@ -38,7 +38,8 @@ __device__ void queues_init(int k, size_c all_memory) {
     for (int i = 0; i < k; i++) {
         queues[i].count = 0;
         queues[i].capacity = items_memory / sizeof(Node*);
-        queues[i].items = (Node*)((size_c)queues + queues_memory + (i*items_memory));
+        queues[i].items = (Node*)((size_c)queues + queues_memory +
+                (i*items_memory));
     }
 }
 
@@ -90,30 +91,24 @@ __device__ int map_hash(Map* map, int j, Node *node) {
     return 0;
 }
 
-__device__ void map_init(int k, int hashing_functions_count) {
-
+__device__ void map_init(size_c map_size) {
+    map->hs = MAP_HASHING_FUNCTIONS;
+    map->nodes = (Node**)((size_c)map + sizeof(Map));
+    map->nodes_count = (map_size - sizeof(Map)) / sizeof(Node**);
 }
 
 __device__ void map_deduplicate(Node* nodes, Node* nodes_dest, int n) {
 
 }
 
-__global__ void gpu_astar_init(
-        Memory *dmem,
-        Queue *dqueue,
-        Map *dmap,
-        int k,
-        int problem,
-        size_c mem_size,
-        size_c queues_size,
-        size_c map_size) {
-    memory = dmem;
-    queues = dqueue;
-    map = dmap;
-    problem_type = problem;
-    memory_init(mem_size);
-    queues_init(k, queues_size);
-    map_init(k, map_size);
+__global__ void gpu_astar_init(Problem p) {
+    memory = p.dev_mem;
+    queues = p.dev_queues;
+    map = p.dev_map;
+    problem_type = p.problem;
+    memory_init(p.mem_size);
+    queues_init(p.k, p.queues_size);
+    map_init(p.map_size);
 }
 
 __global__ void gpu_astar(int k) {
@@ -121,33 +116,30 @@ __global__ void gpu_astar(int k) {
 }
 
 int main() {
-    int k = QUEUE_K;
-    int problem = PROBLEM_TYPE_PUZZLE;
-
-    Memory *dev_mem;
-    Queue *dev_queues;
-    Map *dev_map;
+    Problem p;
+    p.mem_size = 1024*1024*1024 * 9L;
+    p.queues_size = 1024*1024 * 512L;
+    p.map_size = 1024*1024 * 512L;
+    p.problem = PROBLEM_TYPE_PUZZLE;
+    p.k = QUEUE_K;
 
     // Initialize memory.
-    size_c mem_size = 1024*1024*1024 * 9L;
-    handleError(cudaMalloc((void**)&dev_mem, mem_size));
-    size_c queues_size = 1024*1024 * 512L;
-    handleError(cudaMalloc((void**)&dev_queues, queues_size));
-    size_c map_size = 1024*1024 * 512L;
-    handleError(cudaMalloc((void**)&dev_map, map_size));
-    gpu_astar_init<<<1, 1>>>(dev_mem, dev_queues, dev_map, k, problem, mem_size, queues_size, map_size);
+    handleError(cudaMalloc((void**)&p.dev_mem, p.mem_size));
+    handleError(cudaMalloc((void**)&p.dev_queues, p.queues_size));
+    handleError(cudaMalloc((void**)&p.dev_map, p.map_size));
+    gpu_astar_init<<<1, 1>>>(p);
     cudaDeviceSynchronize();
 
     // Run algorithm.
-    gpu_astar<<<100, 100>>>(k);
+    gpu_astar<<<1, 1>>>(p.k);
     cudaDeviceSynchronize();
 
     // Fetch results from GPU.
 
     // Free memory.
-    handleError(cudaFree(dev_mem));
-    handleError(cudaFree(dev_queues));
-    handleError(cudaFree(dev_map));
+    handleError(cudaFree(p.dev_mem));
+    handleError(cudaFree(p.dev_queues));
+    handleError(cudaFree(p.dev_map));
     cudaDeviceSynchronize();
 
     return 0;

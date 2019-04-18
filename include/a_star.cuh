@@ -38,6 +38,7 @@ __device__ Memory *memory;
 
 
 typedef struct {
+    int *numbers;
 } NodePuzzle;
 
 typedef struct {
@@ -54,14 +55,14 @@ __device__ int node_id(Node *node);
 
 typedef struct {
     Node** nodes;
+    size_c nodes_count;
     int hs;
-    int size;
 } Map;
 
 __device__ int map_hash(Map* H, int j, Node *node);
 
-__device__ void map_init(int k, int hashing_functions_count);
-__device__ void map_deduplicate(Map* H, Node* nodes, Node* nodes_dest, int n);
+__device__ void map_init(size_c map_size);
+__device__ void map_deduplicate(Node* nodes, Node* nodes_dest, int n);
 
 __device__ Map *map;
 
@@ -78,3 +79,17 @@ __device__ void queue_pop(Queue* queue, Node *node);
 
 __device__ Queue *queues;
 
+
+typedef struct {
+    Memory* dev_mem;
+    size_c mem_size;
+
+    Queue* dev_queues;
+    size_c queues_size;
+
+    Map* dev_map;
+    size_c map_size;
+
+    int k;
+    int problem;
+} Problem;
