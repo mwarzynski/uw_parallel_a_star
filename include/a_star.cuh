@@ -11,10 +11,6 @@ static void HandleError(cudaError_t err, const char *file, int line) {
 
 typedef unsigned long long int size_c;
 
-#define QUEUE_K 2
-#define QUEUE_CAPACITY 10
-
-#define MAP_HASHING_FUNCTIONS 10
 
 #define PROBLEM_TYPE_PUZZLE 1
 #define PROBLEM_TYPE_PATHFINDING 2
@@ -31,20 +27,24 @@ __device__ void* memory_allocate(size_c size);
 
 
 typedef struct {
-    int *numbers;
+    int numbers[];
 } NodePuzzle;
 
 typedef struct {
+    int x, y;
 } NodePathfinding;
 
 typedef struct {
     int g;
     int f;
-    void *data;
 } Node;
 
-__device__ int node_id(Node *node);
+__device__ int node_id(void *node_data);
+__device__ void* node_data(Node* node);
+__device__ size_t node_size();
 
+
+#define MAP_HASHING_FUNCTIONS 10
 
 typedef struct {
     Node** nodes;
@@ -70,6 +70,14 @@ __device__ void queue_pop(Queue* queue, Node *node);
 
 
 typedef struct {
+    int n;
+} Puzzle;
+
+typedef struct {
+    int dim_x, dim_y;
+} Pathfinding;
+
+typedef struct {
     Memory* memory;
     size_c mem_size;
 
@@ -81,6 +89,9 @@ typedef struct {
 
     int k;
     int type;
+
+    Puzzle puzzle;
+    Pathfinding pathfinding;
 } Problem;
 
 __device__ Problem p;
