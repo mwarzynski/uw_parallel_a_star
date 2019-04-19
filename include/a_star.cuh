@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include <assert.h>
 
 static void HandleError(cudaError_t err, const char *file, int line) {
@@ -34,9 +35,10 @@ typedef struct {
     int x, y;
 } NodePathfinding;
 
-typedef struct {
+typedef struct Node {
     int g;
     int f;
+    Node* previous_node;
 } Node;
 
 __device__ int node_id(void *node_data);

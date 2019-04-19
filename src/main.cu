@@ -7,6 +7,9 @@ __device__ void memory_init(Memory* memory, size_c mem_size) {
 }
 
 __device__ void* memory_allocate(size_t size) {
+    if (size % 0x10 != 0) {
+        size += (0x10 - (size % 0x10));
+    }
     size_c allocated = atomicAdd(&(p.memory->allocated), size);
     assert(allocated + size < p.memory->size);
     return (void*)((size_c)p.memory->data + allocated);
@@ -39,7 +42,7 @@ __device__ int node_id(Node* node) {
 }
 
 __device__ void* node_data(Node* node) {
-    return (void*)(node + sizeof(Node));
+    return (void*)((size_c)node + sizeof(Node));
 }
 
 __device__ size_t node_size() {
